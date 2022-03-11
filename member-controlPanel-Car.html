@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>管理者控制台</title>
+	<link rel="stylesheet" href="../css/jquery.mobile-1.4.5.min.css">
+	<script src="../js/jquery-2.1.0.min.js"></script>
+	<script src="../js/jquery.mobile-1.4.5.min.js"></script>
+</head>
+<script>
+	var flag_username = false;
+	var flag_password = false;
+	var flag_email = false;
+	var uuid = getCookie("uuid");
+	var uid; //傳遞至 api 更新使用
+	$(function(){
+		//username即時監聽
+		$("#u_username").bind("input propertychange", function(){
+			if($(this).val().length > 4 && $(this).val().length < 9){
+				$("#err_username").html("");
+				flag_username = true;
+			}else{
+				$("#err_username").html("請輸入帳號5~8個字!");
+				$("#err_username").css("color", "red");
+				flag_username = false;
+			}
+		});
+		//password即時監聽
+		$("#u_password").bind("input propertychange", function(){
+			if($(this).val().length == 8){
+				$("#err_password").html("");
+				flag_password = true;
+			}else{
+				$("#err_password").html("請輸入密碼8個字!");
+				$("#err_password").css("color", "red");
+				flag_password = false;
+			}
+		});
+		//email即時監聽
+		$("#u_email").bind("input propertychange", function(){
+			if($(this).val().length > 0){
+				$("#err_email").html("");
+				flag_email = true;
+			}else{
+				$("#err_email").html("請輸入信箱!");
+				$("#err_email").css("color", "red");
+				flag_email = false;
+			}
+		});
+		//登出
+		$("#Logout").bind("click",function(){
+			setCookie("uuid", "", 0);
+			location.href = "";
+		});
+		//登出
+		$("#u_Logout").bind("click",function(){
+			setCookie("uuid", "", 0);
+			location.href = "";
+		});
+
+		//驗證uuid是否為登入狀態
+		if(uuid != ""){
+			var jsondata = {};
+			jsondata["uuid"] = uuid;
+
+			$.ajax({
+				type: "POST",
+				url: "member-uuid-api-Car.php",
+				data: JSON.stringify(jsondata),
+				dataType: "json",
+				success: showdata_check_uuid,
+				error: function(){
+					alert("error-member-uuid-api.php");
+				}
+			})
+		}else{
+			alert("請登入會員帳號!");
+			location.href = "spa-20220214-1.html";
+		}
+
+		//取消監聽
+		$("#u_cancel_btn").bind("click",function(){
+			location.href = "member-controlPanel-Car.html";
+		})
+
+		//確認監聽
+		$("#u_ok_btn").bind("click", function(){
+			if(flag_username && flag_password && flag_email){
+				console.log(uid);
+				console.log($("#u_username").val());
+				console.log($("#u_password").val());
+				console.log($("#u_email").val());
+				console.log($("#u_level").val());
+
+				//傳遞至 member_U_api.php
+				var jsonData = {};
+				jsonData["ID"] = uid;
+				jsonData["Username"] = $("#u_username").val();
+				jsonData["Password"] = $("#u_password").val();
+				jsonData["Email"] = $("#u_email").val();
+				jsonData["Level"] = $("#u_level").val();
+				console.log(JSON.stringify(jsonData));
+
+				$.ajax({
+					type: "POST",
+					url: "member-U-api-Car.php",
+					data: JSON.stringify(jsonData),
+					dataType: "json",
+					success: showdata_U,
+					error: function(){
+						alert("error-member-U-api.php");
+					}
+				});
+			}else{
+				alert("格式輸入錯誤,請依照規則輸入!");
+			}			
+		});
+	})
+
+	function showdata_check_uuid(data){
+		console.log(data);
+		if(data.state){
+			if(data.data[0].Level != 1){
+				alert("您的帳號不是管理者等級, 無權力拜訪此頁面!");
+				location.href = "member-UserLogin-Car.html";
+			}
+			//產生table資料
+			$.ajax({
+				type: "GET",
+				url: "member-R-api-Car.php",
+				dataType: "json",
+				async: false,
+				success: showdata_R,
+				error: function(){
+					alert("error-member-R-api.php");
+				}
+			});
+		}else{
+			alert(data.message);
+			location.href = "spa-20220214-1.html";
+		}
+	}
+
+	function showdata_R(data){
+		console.log(data);
+		$("#mybody").empty();
+		for(var i=0; i<data.data.length; i++){
+			
+			var userLevel = '訪客';
+			if(data.data[i].Level == 1){
+				userLevel = "管理員";
+			}else if(data.data[i].Level == 2){
+				userLevel = "一級會員";
+			}else if(data.data[i].Level == 3){
+				userLevel = "二級會員";
+			}
+
+			var strHTML = '<tr><td>'+data.data[i].ID+'</td><td>'+data.data[i].Username+'</td><td>'+data.data[i].Password+'</td><td>'+data.data[i].Email+'</td><td>'+userLevel+'</td><td><button id="btn_update" data-id="'+data.data[i].ID+'" data-username="'+data.data[i].Username+'" data-password="'+data.data[i].Password+'" data-email="'+data.data[i].Email+'" data-userlevel="'+data.data[i].Level+'">更新</button><button id="btn_delete" data-id="'+data.data[i].ID+'">刪除</button></td></tr>';
+			$("#mybody").append(strHTML);
+		}
+
+		//btn_delete 監聽
+		$("#mybody #btn_delete").bind("click", function(){
+
+			if(confirm("確認要刪除嗎?")){
+				console.log($(this).data("id"));
+				var jsonData = {};
+				jsonData["ID"] = $(this).data("id");  //jsonData["ID"] = $(this).data("id")  前者ID要對後端api的寫法,後者id則對前端的寫法
+				console.log(JSON.stringify(jsonData));
+
+				$.ajax({
+					type: "POST",
+					url: "member-D-api-Car.php",
+					dataType: "json",
+					data: JSON.stringify(jsonData),
+					success: showdata_D,
+					error: function(){
+						alert("error-member-D-api.php");
+					}
+				});
+			}
+		});
+		//btn_update 監聽
+		$("#mybody #btn_update").bind("click", function(){
+			console.log($(this).data("id"));
+			console.log($(this).data("userlevel"));
+			console.log($(this).data("username"));
+			console.log($(this).data("password"));
+			console.log($(this).data("email"));
+
+			//切換頁面
+			$.mobile.changePage( "#update", { transition: "flip", changeHash: false });
+			uid = $(this).data("id");				
+			$("#u_username").val($(this).data("username"));
+			$("#u_password").val($(this).data("password"));
+			$("#u_email").val($(this).data("email"));
+			$("#u_level").val($(this).data("userlevel"));
+			$("#u_level").selectmenu("refresh");
+
+		});			
+	}
+
+	function showdata_D(data){
+		console.log(data);
+		location.href = "";
+	}
+
+	function showdata_U(data){
+		console.log(data);
+		if(data.state){
+			alert(data.message);
+			location.href = "member-controlPanel-Car.html";
+		}
+	}
+
+	function setCookie(cname, cvalue, exdays) {
+		const d = new Date();
+		d.setTime(d.getTime() + (exdays*24*60*60*1000));
+		let expires = "expires="+ d.toUTCString();
+		document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+	}
+
+	//取得Cookie
+	function getCookie(cname) {
+	  let name = cname + "=";
+	  let decodedCookie = decodeURIComponent(document.cookie);
+	  let ca = decodedCookie.split(';');
+	  for(let i = 0; i <ca.length; i++) {
+	    let c = ca[i];
+	    while (c.charAt(0) == ' ') {
+	      c = c.substring(1);
+	    }
+	    if (c.indexOf(name) == 0) {
+	      return c.substring(name.length, c.length);
+	    }
+	  }
+	  return "";
+	}
+</script>
+<body>
+	<div data-role="page" id="home">
+		<div data-role="header" data-theme="b">
+			<a href="#" data-role="button" id="Logout">登出</a>
+			<h1>管理者控制台</h1>
+		</div>
+		<div role="main" class="ui-content">
+			<h1>會員管理畫面</h1>
+			<table data-role="table" id="movie-table" data-mode="reflow" class="ui-responsive">
+				<thead>
+					<tr>
+						<th>編號</th>
+						<th>使用者名稱</th>
+						<th>使用者密碼</th>
+						<th>Email</th>
+						<th>會員等級</th>
+						<th>設定</th>
+					</tr>
+				</thead>
+				<tbody id="mybody">
+					<tr>
+						<td>1</td>
+						<td>admin</td>
+						<td>123456</td>
+						<td>tesdt@test.com</td>
+						<td>管理者</td>
+						<td>
+							<button id="btn_update">更新</button>
+							<button id="btn_delete">刪除</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>		
+		<div data-role="footer" data-position="fixed" data-theme="b">
+			<h1>頁尾</h1>
+		</div>
+	</div>
+	<div data-role="page" id="update">
+		<div data-role="header" data-position="fixed"data-theme="b">
+			<a href="#" data-role="button" id="u_Logout">登出</a>
+			<h1>會員更新</h1>
+		</div>
+		<div role="main" class="ui-content">
+			<div data-role="filedcontain">
+				<label for="u_username">帳號</label>
+				<input type="text" id="u_username" name="u_username">
+			</div>
+			<div id="err_username"></div>
+
+			<div data-role="filedcontain">
+				<label for="u_password">密碼</label>
+				<input type="password" id="u_password" name="u_password">
+			</div>
+			<div id="err_password"></div>
+
+			<div data-role="filedcontain">
+				<label for="u_email">Email</label>
+				<input type="email" id="u_email" name="u_email">
+			</div>
+			<div id="err_email"></div>
+
+			<div data-role="filedcontain">
+				<label for="u_level">會員等級</label>
+				<select name="u_level" id="u_level">
+					<option value="請選擇">請選擇</option>
+					<option value="2">一級會員</option>
+					<option value="3">二級會員</option>
+				</select>
+			</div>
+
+			<div class="ui-grid-a">
+				<div class="ui-block-a">
+					<a href="#" data-theme="b" data-icon="delete" data-role="button" id="u_cancel_btn">取消</a>
+				</div>
+				<div class="ui-block-b">
+					<a href="#" data-theme="b" data-icon="check" data-role="button" id="u_ok_btn">確認</a>
+				</div>
+			</div>
+		</div>
+		<div data-role="footer" data-position="fixed"data-theme="b">
+			<h1>頁尾</h1>
+		</div>
+	</div>
+</body>
+</html> 
