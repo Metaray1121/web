@@ -45,17 +45,20 @@
 	<section class="bg-dark wow animate__fadeInTopRight" data-wow-duration="1s" data-wow-delay="0s"
 		data-wow-iteration="1s">
 		<div class="container">
-			<!-- <div class="btn-group" role="group" aria-label="Basic example">
-				  <button type="button" class="btn btn-primary">登出</button>
-				  <button type="button" class="btn btn-primary">首頁</button>
-				  <button type="button" class="btn btn-primary">更新密碼</button>
-				</div> -->
-			<form class="form-inline my-2 my-lg-0">
-				<button type="button" class="btn btn-outline-warning mr-2" id="Logout">登出</button>
-				<button type="button" class="btn btn-outline-warning mr-auto" id="Home">首頁</button>
-				<button type="button" class="btn btn-outline-info" data-toggle="modal"
-					data-target="#UpdatePasswordModal">更新密碼</button>
-			</form>
+			<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+				<div>
+					<form class="form-inline my-2 my-lg-0">
+						<button type="button" class="btn btn-outline-warning mr-2" id="Logout">登出</button>
+						<button type="button" class="btn btn-outline-warning" id="Home">首頁</button>
+					</form>
+				</div>
+				<div class="ml-auto">
+					<form class="form-inline my-2 my-lg-0">
+						<button type="button" class="btn btn-outline-info" data-toggle="modal"
+							data-target="#UpdatePasswordModal">更新密碼</button>
+					</form>
+				</div>
+			</nav>
 		</div>
 	</section>
 	<!-- ************UpdatePasswordModal******************* -->
