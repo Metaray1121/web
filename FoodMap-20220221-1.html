@@ -123,6 +123,10 @@
 		var curRegion; //紀錄所選擇的鄉鎮市
 		var map;
 		var markers;
+		var arr = [];
+		var strPOPUP = '';
+		var lng = '';
+		var lat = '';
 
 		$(function () {
 
@@ -155,7 +159,6 @@
 			console.log(cityData);
 			console.log(city);
 
-
 			//產生縣市選單
 			$("#citylist").empty();
 			$("#citylist").append("<option selected>---------請選擇縣市---------</option>");
@@ -187,12 +190,23 @@
 
 			//鄉鎮區選單監聽 取得鄉鎮區名稱
 			$("#cunlist").change(function () {
+				for (var i = 0; i < arr.length; ++i) {
+					console.log(arr[i]);
+					map.removeLayer(arr[i]);
+					console.log("nnn");
+				}
+				arr = []; //清空
+				markers = new L.markerClusterGroup().addTo(map); //再新建一次使清空後還可以產生水滴					
+
+				console.log("123");
+
 				console.log($(this).val());
 				curRegion = $(this).val();
 
 				$("#NameResult").empty();
 				regionMaskData = [];
 				removeMarker();  //清空marker
+
 				//產生餐廳列表 list-group
 				cityData.forEach(function (item) {
 					if (item.Region == curCity && item.Town == curRegion) {
@@ -203,10 +217,11 @@
 
 				regionMaskData.forEach(function (item, key) {
 
-					var lng = item.Px;
-					var lat = item.Py;
+					console.log(arr);
+					lng = item.Px;
+					lat = item.Py;
 					// console.log(lat +'-'+ lng);
-					var strHTML = '<li class="list-group-item" data-markers="' + markers + '" data-picture1="' + item.Picture1 + '" data-name="' + item.Name + '" data-addr="' + item.Add + '" data-phone="' + item.Tel + '" data-lat="' + item.Py + '" data-lng="' + item.Px + '"><p class="h1">' + item.Name + '</p><p class="h5">地址:' + item.Add + '</p><p class="h5">電話: ' + item.Tel + '</p></li>';
+					var strHTML = '<li class="list-group-item" data-picture1="' + item.Picture1 + '" data-name="' + item.Name + '" data-addr="' + item.Add + '" data-phone="' + item.Tel + '" data-lat="' + item.Py + '" data-lng="' + item.Px + '"><p class="h1">' + item.Name + '</p><p class="h5">地址:' + item.Add + '</p><p class="h5">電話: ' + item.Tel + '</p></li>';
 					$("#NameResult").append(strHTML);
 
 					var picture;
@@ -216,23 +231,25 @@
 						picture = item.Picture1;
 					}
 
-					
-					var strPOPUP = '<div class="card"><img src="' + picture + '" class="card-img-top" alt="..."><div class="card-body"><h5 class="card-title">' + item.Name + '</h5><p class="card-text">地址: ' + item.Add + '</p><p class="card-text">電話: ' + item.Tel + '</p></div></div>';
+
+					strPOPUP = '<div class="card"><img src="' + picture + '" class="card-img-top" alt="..."><div class="card-body"><h5 class="card-title">' + item.Name + '</h5><p class="card-text">地址: ' + item.Add + '</p><p class="card-text">電話: ' + item.Tel + '</p></div></div>';
 					//產生地圖水滴
 					// L.marker([lat ,lng]).addTo(map)
 					// 	.bindPopup(strPOPUP)
-
 
 					//移動地圖 panto
 					if (key == Math.round(regionMaskData.length / 2)) {
 						map.panTo([lat, lng]);
 					}
+					// markers.addLayer(L.marker([lat, lng])); //如果打這樣只會產生群聚,但點水滴不會有資料
 					markers.addLayer(L.marker([lat, lng]).bindPopup(strPOPUP)); //讓水滴群聚
+					arr.push(markers);
+					// console.log(markers);
 				})
-				
 
 				console.log(regionMaskData);
 
+				//點左邊欄位顯示資料和水滴
 				$(".list-group-item").click(function () {
 					console.log($(this).data("name"));
 					console.log($(this).data("addr"));
@@ -240,12 +257,12 @@
 					console.log($(this).data("lat"));
 					console.log($(this).data("lng"));
 
-					popupMarker($(this).data("markers"), $(this).data("picture1"), $(this).data("name"), $(this).data("addr"), $(this).data("phone"), $(this).data("lat"), $(this).data("lng"), );
+					popupMarker($(this).data("picture1"), $(this).data("name"), $(this).data("addr"), $(this).data("phone"), $(this).data("lat"), $(this).data("lng"),);
 				});
 			});
 		});
 
-		function popupMarker(markers, picture1, name, addr, phone, lat, lng) {
+		function popupMarker(picture1, name, addr, phone, lat, lng) {
 			console.log("form--popupMarker--------");
 			console.log(name);
 			console.log(addr);
@@ -253,7 +270,6 @@
 			console.log(lng);
 			console.log(lat);
 			console.log(picture1);
-			console.log(markers);
 
 			var picture;
 			if (picture1 == "" || picture1 == null) {
@@ -264,19 +280,21 @@
 
 
 			var strPOPUP = '<div class="card"><img src="' + picture + '" class="card-img-top" alt="..."><div class="card-body"><h5 class="card-title">' + name + '</h5><p class="card-text">地址:' + addr + '</p><p class="card-text">電話:' + phone + '</p></div></div>';
-			L.marker([lat, lng]).addTo(map)
-				.bindPopup(strPOPUP)
-				.openPopup();
-			
+			L.marker([lat, lng]).addTo(map) //放置水滴
+				.bindPopup(strPOPUP) //塞入資料
+				.openPopup(); //直接顯示資料
+
 		}
 
+		//清除上筆所選
 		function removeMarker() {
-			map.eachLayer(function (layer) {
+			this.map.eachLayer(function (layer) {
 				if (layer instanceof L.Marker) {
-					map.removeLayer(layer);
+					this.map.removeLayer(layer);
 				}
 			});
 		}
+
 
 	</script>
 </body>
