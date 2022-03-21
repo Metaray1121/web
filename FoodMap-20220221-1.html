@@ -14,7 +14,7 @@
 		crossorigin="" />
 	<link rel="stylesheet" href="../css/MarkerCluster.css">
 
-	<title>口罩地圖</title>
+	<title>餐廳地圖</title>
 	<style>
 		#NameResult {
 			height: 80vh;
@@ -94,7 +94,6 @@
 				<ul class="list-group" id="NameResult">
 				</ul>
 
-
 			</div>
 			<div class="col-md-9 bg-primary">
 				<!-- 地圖 -->
@@ -119,14 +118,13 @@
 
 	<script>
 		var curCity; //紀錄所選擇的縣市
-		var cityData = []; //健保局外部資料
-		var regionMaskData = []; //儲存該鄉鎮區健保局藥局的所有資料
+		var cityData = []; //餐廳外部資料
+		var regionMaskData = []; //儲存該鄉鎮區餐廳的所有資料
 		var curRegion; //紀錄所選擇的鄉鎮市
 		var map;
 		var markers;
 
 		$(function () {
-
 
 			//產生地圖
 			map = L.map('map').setView([24.1512584, 120.6617597], 13);
@@ -141,14 +139,14 @@
 
 			markers = new L.markerClusterGroup().addTo(map);
 
-			//取得健保局外部資料
+			//取得外部資料
 			$.ajax({
 				type: "GET",
-				url: "../js/points.json",
+				url: "../js/restaurant_C_f.json",
 				dataType: "json",
 				async: false,
 				success: function (data) {
-					cityData = data.features;
+					cityData = data.XML_Head.Infos.Info;
 				},
 				error: function () {
 					alert("error");
@@ -157,11 +155,12 @@
 			console.log(cityData);
 			console.log(city);
 
+
 			//產生縣市選單
 			$("#citylist").empty();
 			$("#citylist").append("<option selected>---------請選擇縣市---------</option>");
 			city.forEach(function (item) {
-				// console.log(item.CityName);
+
 				var strHTML = '<option value="' + item.CityName + '">' + item.CityName + '</option>';
 				$("#citylist").append(strHTML);
 			});
@@ -174,11 +173,10 @@
 				//產生鄉鎮區選單
 				city.forEach(function (item) {
 					if (item.CityName == curCity) {
-						// console.log(item.AreaList);
+
 						$("#cunlist").empty();
 						$("#cunlist").append("<option selected>---------請選擇鄉鎮區---------</option>");
 						item.AreaList.forEach(function (region) {
-							// console.log(region.AreaName);
 							//產生地區選單
 							var strHTML = '<option value="' + region.AreaName + '">' + region.AreaName + '</option>';
 							$("#cunlist").append(strHTML);
@@ -195,41 +193,43 @@
 				$("#NameResult").empty();
 				regionMaskData = [];
 				removeMarker();  //清空marker
-				//產生藥局列表 list-group
+				//產生餐廳列表 list-group
 				cityData.forEach(function (item) {
-					if (item.properties.county == curCity && item.properties.town == curRegion) {
-						regionMaskData.push(item); //收集該鄉鎮區的藥局資料
+					if (item.Region == curCity && item.Town == curRegion) {
+						regionMaskData.push(item); //收集該鄉鎮區的餐廳資料
 
 					}
 				});
 
 				regionMaskData.forEach(function (item, key) {
-					// console.log(item.properties.name +"--"+item.properties.address + "key:" +key);
-					var lng = item.geometry.coordinates[0];
-					var lat = item.geometry.coordinates[1];
+
+					var lng = item.Px;
+					var lat = item.Py;
 					// console.log(lat +'-'+ lng);
-					var strHTML = '<li class="list-group-item" data-name="' + item.properties.name + '" data-addr="' + item.properties.address + '" data-phone="' + item.properties.phone + '" data-adult="' + item.properties.mask_adult + '" data-child="' + item.properties.mask_child + '" data-lat="' + lat + '" data-lng="' + lng + '"><p class="h1">' + item.properties.name + '</p><p class="h5">地址:' + item.properties.address + '</p><p class="h5">電話: ' + item.properties.phone + '</p><p>成人口罩: <span class="text-danger font-weight-bold h3">' + item.properties.mask_adult + '</span>個 | 兒童口罩: <span class="text-success font-weight-bold h3">' + item.properties.mask_child + '</span>個</p></li>';
+					var strHTML = '<li class="list-group-item" data-markers="' + markers + '" data-picture1="' + item.Picture1 + '" data-name="' + item.Name + '" data-addr="' + item.Add + '" data-phone="' + item.Tel + '" data-lat="' + item.Py + '" data-lng="' + item.Px + '"><p class="h1">' + item.Name + '</p><p class="h5">地址:' + item.Add + '</p><p class="h5">電話: ' + item.Tel + '</p></li>';
 					$("#NameResult").append(strHTML);
 
+					var picture;
+					if (item.Picture1 == "" || item.Picture1 == null) {
+						picture = "http://fakeimg.pl/350x200/00CED1/FFF/";
+					} else {
+						picture = item.Picture1;
+					}
 
-					var strPOPUP = '<div class="card"><img src="http://fakeimg.pl/350x200/00CED1/FFF/?text=img+placeholder" class="card-img-top" alt="..."><div class="card-body"><h5 class="card-title">' + item.properties.name + '</h5><p class="card-text">地址: ' + item.properties.address + '</p><p class="card-text">電話: ' + item.properties.phone + '</p><p class="text-danger font-weight-bold h3">成人口罩: ' + item.properties.mask_adult + '</p><p class="text-success font-weight-bold h3">兒童口罩: ' + item.properties.mask_child + '</p></div></div>';
+					
+					var strPOPUP = '<div class="card"><img src="' + picture + '" class="card-img-top" alt="..."><div class="card-body"><h5 class="card-title">' + item.Name + '</h5><p class="card-text">地址: ' + item.Add + '</p><p class="card-text">電話: ' + item.Tel + '</p></div></div>';
 					//產生地圖水滴
 					// L.marker([lat ,lng]).addTo(map)
 					// 	.bindPopup(strPOPUP)
-
-					if (item.properties.mask_adult > 1000) {
-						markers.addLayer(L.marker([lat, lng], { icon: greenIcon }).bindPopup(strPOPUP));
-					} else {
-						markers.addLayer(L.marker([lat, lng], { icon: redIcon }).bindPopup(strPOPUP));
-					}
-
 
 
 					//移動地圖 panto
 					if (key == Math.round(regionMaskData.length / 2)) {
 						map.panTo([lat, lng]);
 					}
+					markers.addLayer(L.marker([lat, lng]).bindPopup(strPOPUP)); //讓水滴群聚
 				})
+				
 
 				console.log(regionMaskData);
 
@@ -237,30 +237,37 @@
 					console.log($(this).data("name"));
 					console.log($(this).data("addr"));
 					console.log($(this).data("phone"));
-					console.log($(this).data("adult"));
-					console.log($(this).data("child"));
 					console.log($(this).data("lat"));
 					console.log($(this).data("lng"));
 
-					popupMarker($(this).data("name"), $(this).data("addr"), $(this).data("phone"), $(this).data("adult"), $(this).data("child"), $(this).data("lat"), $(this).data("lng"));
+					popupMarker($(this).data("markers"), $(this).data("picture1"), $(this).data("name"), $(this).data("addr"), $(this).data("phone"), $(this).data("lat"), $(this).data("lng"), );
 				});
 			});
 		});
 
-		function popupMarker(name, addr, phone, adult, child, lat, lng) {
+		function popupMarker(markers, picture1, name, addr, phone, lat, lng) {
 			console.log("form--popupMarker--------");
 			console.log(name);
 			console.log(addr);
 			console.log(phone);
-			console.log(adult);
-			console.log(child);
-			console.log(lat);
 			console.log(lng);
+			console.log(lat);
+			console.log(picture1);
+			console.log(markers);
 
-			var strPOPUP = '<div class="card"><img src="http://fakeimg.pl/350x200/00CED1/FFF/" class="card-img-top" alt="..."><div class="card-body"><h5 class="card-title">' + name + '</h5><p class="card-text">地址:' + addr + '</p><p class="card-text">電話:' + phone + '</p><p class="text-danger font-weight-bold h4">成人口罩: ' + adult + '</p><p class="text-success font-weight-bold h4">兒童口罩: ' + child + '</p></div></div>';
+			var picture;
+			if (picture1 == "" || picture1 == null) {
+				picture = "http://fakeimg.pl/350x200/00CED1/FFF/";
+			} else {
+				picture = picture1;
+			}
+
+
+			var strPOPUP = '<div class="card"><img src="' + picture + '" class="card-img-top" alt="..."><div class="card-body"><h5 class="card-title">' + name + '</h5><p class="card-text">地址:' + addr + '</p><p class="card-text">電話:' + phone + '</p></div></div>';
 			L.marker([lat, lng]).addTo(map)
 				.bindPopup(strPOPUP)
 				.openPopup();
+			
 		}
 
 		function removeMarker() {
@@ -270,6 +277,7 @@
 				}
 			});
 		}
+
 	</script>
 </body>
 
